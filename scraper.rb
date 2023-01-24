@@ -24,36 +24,28 @@ def json_for(doc)
   )
 end
 
-# The results are paginated. We can construct the URL for eaxh page from data within the JSON.
+# The results are paginated. We can construct the URL for each page from data
+# within the JSON of the results page.
 page_urls = json_for(doc).dig(:pagination, :options).map do |option|
   next url if option[:value].to_i.zero?
 
   "#{url}&index=#{option[:value]}"
 end
 
-# Get property info from each page
+# Get info of all properties
 properties = page_urls.flat_map do |page_url|
   doc = Nokogiri::HTML(URI.open(page_url))
 
   json_for(doc)[:properties].map do |property|
     {
-      # id
       id: property[:id],
-      # url
       url: base_url + property[:propertyUrl],
-      # price
       price: property.dig(:price, :amount),
-      # additional price info
       additional_price_info: property.dig(:price, :displayPrices).first[:displayPriceQualifier],
-      # bedrooms
       bedrooms: property[:bedrooms],
-      # updated_at
       updated_at: property.dig(:listingUpdate, :listingUpdateDate),
-      # update_reason
       update_reason: property.dig(:listingUpdate, :listingUpdateReason),
-      # is auction
       is_auction: property[:auction],
-      # scraped_at
       scraped_at: Time.new
     }
   end
